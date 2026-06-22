@@ -39,5 +39,20 @@ jobs:
           # 删除 .git 文件夹，不需要上传到 HF
           rm -rf .git
           
+          # 给 README.md 顶部注入 Hugging Face 所需的配置项 (Frontmatter)
+          cat << 'EOF' > hf-frontmatter.txt
+---
+title: 9Router AI Gateway
+emoji: 🚀
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
+EOF
+          cat README.md >> hf-frontmatter.txt
+          mv hf-frontmatter.txt README.md
+          
           # 使用 hf CLI 绕过 git 的二进制文件限制
           hf upload $HF_USERNAME/$HF_SPACE_NAME . . --repo-type space --token $HF_TOKEN
