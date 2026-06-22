@@ -39,5 +39,5 @@ jobs:
           # 删除 .git 文件夹，不需要上传到 HF
           rm -rf .git
           
-          # 使用 huggingface-cli 绕过 git 的二进制文件限制
-          huggingface-cli upload $HF_USERNAME/$HF_SPACE_NAME . . --repo-type space --token $HF_TOKEN
+          # 使用 hf CLI 绕过 git 的二进制文件限制
+          hf upload $HF_USERNAME/$HF_SPACE_NAME . . --repo-type space --token $HF_TOKEN
