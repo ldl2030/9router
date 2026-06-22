@@ -14,17 +14,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install huggingface_hub
-        run: pip install -U "huggingface_hub[cli]"
-
-      - name: Push to Hugging Face Hub via CLI
+      - name: Push to Hugging Face Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_USERNAME: ${{ secrets.HF_USERNAME }}
@@ -36,8 +27,9 @@ jobs:
             exit 1
           fi
           
-          # 删除 .git 文件夹，不需要上传到 HF
-          rm -rf .git
+          # 配置 Git 信息
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
           
           # 给 README.md 顶部注入 Hugging Face 所需的配置项 (Frontmatter)
           cat << 'EOF' > hf-frontmatter.txt
@@ -54,5 +46,28 @@ EOF
           cat README.md >> hf-frontmatter.txt
           mv hf-frontmatter.txt README.md
           
-          # 使用 hf CLI 绕过 git 的二进制文件限制，上传到远程仓库的根目录
-          hf upload $HF_USERNAME/$HF_SPACE_NAME . / --repo-type space --token $HF_TOKEN
+          # 核心修复：Hugging Face 拒绝二进制文件（如图片）提交
+          # 我们通过创建一个无历史的新分支 (orphan branch) 并配置 Git LFS 来解决这个问题
+          git checkout --orphan hf-deploy
+          
+          # 清除现有的 Git 缓存状态
+          git rm -rf --cached .
+          
+          # 安装并配置 Git LFS 追踪所有图片文件
+          git lfs install
+          cat << 'EOF' > .gitattributes
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.jpeg filter=lfs diff=lfs merge=lfs -text
+*.ico filter=lfs diff=lfs merge=lfs -text
+*.gif filter=lfs diff=lfs merge=lfs -text
+EOF
+          
+          # 重新添加所有文件，此时 Git 会用 LFS 处理图片
+          git add .gitattributes
+          git add -A
+          git commit -m "Deploy to Hugging Face Spaces"
+          
+          # 强制推送到 Hugging Face 的 main 分支
+          git remote add space https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME
+          git push --force space hf-deploy:main
