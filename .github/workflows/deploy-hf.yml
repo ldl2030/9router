@@ -54,5 +54,5 @@ EOF
           cat README.md >> hf-frontmatter.txt
           mv hf-frontmatter.txt README.md
           
-          # 使用 hf CLI 绕过 git 的二进制文件限制
-          hf upload $HF_USERNAME/$HF_SPACE_NAME . . --repo-type space --token $HF_TOKEN
+          # 使用 hf CLI 绕过 git 的二进制文件限制，上传到远程仓库的根目录
+          hf upload $HF_USERNAME/$HF_SPACE_NAME . / --repo-type space --token $HF_TOKEN
